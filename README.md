@@ -1,9 +1,19 @@
-# CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
+CarND · T2 · P4 · PID Controller
+================================
 
----
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-## Dependencies
+<img src="output/images/004 - Simulator Rotated.png" alt="Particles Filter visualization on the simulator." />
+
+
+Project Overview
+----------------
+
+TODO
+
+
+Dependencies
+------------
 
 * cmake >= 3.5
  * All OSes: [click here for installation instructions](https://cmake.org/install/)
@@ -27,6 +37,7 @@ Self-Driving Car Engineer Nanodegree Program
 * Simulator. You can download these from the [project intro page](https://github.com/udacity/self-driving-car-sim/releases) in the classroom.
 
 There's an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3)
+
 
 ## Basic Build Instructions
 
