@@ -2,19 +2,22 @@ project(PID)
 
 cmake_minimum_required (VERSION 3.5)
 
-add_definitions(-std=c++11)
+# -g allows for gdb debugging
+# -03 enables optimizations for best performance
+add_definitions(-std=c++11 -O3)
 
-set(CXX_FLAGS "-Wall")
+set(CXX_FLAGS "-Wall -O3 -funroll-loops")
 set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(sources src/PID.cpp src/main.cpp)
 
-include_directories(/usr/local/include)
-link_directories(/usr/local/lib)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
 
+include_directories(/usr/local/include)
 include_directories(/usr/local/opt/openssl/include)
+link_directories(/usr/local/lib)
 link_directories(/usr/local/opt/openssl/lib)
 link_directories(/usr/local/Cellar/libuv/1*/lib)
 
