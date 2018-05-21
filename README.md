@@ -1,4 +1,4 @@
-CarND · T2 · P4 · Proportional–Integral–Derivative (PID) Controller Project
+CarND · T2 · P4 · Proportional-Integral-Derivative (PID) Controller Project
 ===========================================================================
 
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
