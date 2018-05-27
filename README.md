@@ -61,6 +61,18 @@ Or, all together (from inside the `build` directory): `clear && cmake .. && make
 Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d).
 
 
+Calibration
+-----------
+
+The 3 weights (P, I and D) has been adjusted by trial and error:
+
+ - First, the P param was adjusted so that the car would wobble arround the center of the lane. Increasing it would make the car take sharper turns to go back to the center of the road, while reducing it would produce smoother/slower turns.
+ - Next, the D param was added and adjusted to reduce the oscillations. Increasing it reduces the oscillations as it would "counter-steer" the faster the CTE is reduced, so that when the car reaches the center of the lane, it would be facing in the lane direction and not tilted toward the opposite side of the road (with respect to the side where the car was before)
+ - Finally, the I param was added to reduce the offset/drift on curves. Increasing it will make the car turn harder as time passes and the CTE is not reduced.
+
+This process was done with a fixed throttle value first, then a simple throttle controller implemented with a couple `if` statements, and finally a second PID controller (actually just ID currently), incrementing the target speed slowly and adjusting the weights to keep the car on the road.
+
+
 Interesting Resources
 ---------------------
 
