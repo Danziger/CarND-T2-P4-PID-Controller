@@ -1,6 +1,8 @@
 ﻿#include "PID.h"
 
-#include "json.hpp"
+#include "common/JSON-Lohmann-2.1.1/json.hpp"
+#include "common/format.h"
+#include "common/helpers.h"
 
 #include <uWS/uWS.h>
 #include <math.h>
@@ -8,36 +10,9 @@
 #include <algorithm>
 
 
-// To convert back and forth between radians and degrees:
-#define DEG_2_RAD(X) ( X * M_PI / 180 )
-#define RAD_2_DEG(X) ( X * 180 / M_PI )
-
-
 // For convenience:
 using json = nlohmann::json;
 using namespace std;
-
-
-// HELPER FUNCTIONS:
-
-/*
-* Checks if the SocketIO event has JSON data.
-* If there is data the JSON object in string format will be returned,
-* else the empty string "" will be returned.
-*/
-string hasData(const string s) {
-    const auto found_null = s.find("null");
-    const auto b1 = s.find_first_of("[");
-    const auto b2 = s.rfind("}]");
-
-    if (found_null != string::npos) {
-        return "";
-    } else if (b1 != string::npos && b2 != string::npos) {
-        return s.substr(b1, b2 - b1 + 2);
-    }
-
-    return "";
-}
 
 
 // MAIN:
@@ -76,7 +51,7 @@ int main() {
             return;
         }
 
-        const string s = hasData(sdata);
+        const string s = helpers::hasData(sdata);
 
         if (s == "") {
             // Manual driving:
@@ -134,7 +109,7 @@ int main() {
         msgJson["steering_angle"] = steer_value;
         msgJson["throttle"] = speed < 50 ? 1 : throttle;
 
-        const auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+        const string msg = "42[\"steer\"," + msgJson.dump() + "]";
 
         // Send it:
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -184,7 +159,11 @@ int main() {
      ) {
         ws.close();
 
-        cout << "Disconnected!" << endl << endl << endl;
+        cout
+            << endl
+            << "Disconnected!" << endl
+            << endl
+            << SEPARATOR << endl;
     });
 
     // START LISTENING:
@@ -200,7 +179,12 @@ int main() {
             << "──────────────────────────────────────────────────────" << endl;
 
     } else {
-        cerr << endl << "Failed to listen on port" << port << "!" << endl << endl;
+
+        cerr
+            << endl
+            << "Failed to listen on port" << port << "!"
+            << endl
+            << SEPARATOR << endl;
 
         return -1;
     }
