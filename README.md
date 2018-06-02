@@ -61,16 +61,88 @@ Or, all together (from inside the `build` directory): `clear && cmake .. && make
 Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d).
 
 
-Calibration
------------
+Reflection
+----------
 
-The 3 weights (P, I and D) has been adjusted by trial and error:
+### P, I & D Coefficients & Implementation Details
 
- - First, the P param was adjusted so that the car would wobble arround the center of the lane. Increasing it would make the car take sharper turns to go back to the center of the road, while reducing it would produce smoother/slower turns.
- - Next, the D param was added and adjusted to reduce the oscillations. Increasing it reduces the oscillations as it would "counter-steer" the faster the CTE is reduced, so that when the car reaches the center of the lane, it would be facing in the lane direction and not tilted toward the opposite side of the road (with respect to the side where the car was before)
- - Finally, the I param was added to reduce the offset/drift on curves. Increasing it will make the car turn harder as time passes and the CTE is not reduced.
+First, let's see what each term (P, I and D) and the coefficients we can adjust to modify their contribution to the total error (Kp, Ki and Kd) do:
 
-This process was done with a fixed throttle value first, then a simple throttle controller implemented with a couple `if` statements, and finally a second PID controller (actually just ID currently), incrementing the target speed slowly and adjusting the weights to keep the car on the road.
+- **`P (Kp)`**: This term produces an output that is proportional to the current error. The larger this term, the larger the output, given a change in the error.
+  If this term is too small, the controller would not be too responsive. In our case, this means the vehicle won't steer enough on turns and will probably go out of the track.
+  If this term is too big, however, the controller would likely overshoot the setpoint (target) value and might become unstable. In our case, this means the vehicle will steer towards the center of the road, overshoot, turn the opposite way, overshoot again... Oscillating more and more each time until it goes out of the track or crashes into something.
+  When adjusted properly, the vehicle would oscillate around the center of the road, but the oscillations won't be wide enough to make it crash or go out of the track.
+  
+- **`I (Ki)`**: This term produces an output that is proportional to the sum of the errors at each timestep. The longest an error is sustained over time, the larger this term becomes.
+  If this term is too small, we might always have a steady-state error. In our case, the vehicle might always be offset a constant distance from the middle of the road due to errors on the steering system calibration or, when turning fast, the car might drift outside of the track, as the `P` term would not account for the extra steering that should be applied to counter that.
+  If this term is too big, however, the controller would likely overshoot the setpoint. In our case, the vehicle might sharply increase the steering angle while going through a turn at a small CTE, which would probably cause an overshoot and instability, which might end up with the vehicle crashing or going out of the track.
+  When adjusted properly, the vehicle will be able to stay closer to the center of the road while turning and will react quicker to sudden turns.
+  
+- **`D (Kd)`**: This term produces an output that is proportional to the slope of the error over time. The faster the error is reduced, the larger this term becomes.
+  If this term is too small, the controller would probably be less stable. In our case, the vehicle will produce bigger oscillations.
+  If this term is too big, the controller would probably undershoot the setpoint. In our case, as the vehicle starts steering towards the center of the road and the error starts decreasing, this term will make the vehicle steer in the opposite direction, increasing the CTE again, followed by another attempt to move towards the center of the road... as if there was some kind of magnetic repulsion between the vehicle and the center of the road.
+  When adjusted properly, the vehicle will slightly counter-steer as it approaches the center of the road to avoid overshooting it, reducing the oscillations as well.
+
+A few modifications have been introduced to this basic implementation of a PID controller, producing the following code:
+
+    // Calculate the change in CTE and the accumulated CTE (weighted):
+    const double pv_diff = pv - pv_prev_;
+
+    // Update the previous CTE to calculate the diff in the next timestep:
+    pv_prev_ = pv;
+
+    pv_int_ = pv + Wi_ * pv_int_;
+
+    // Calculate the contribution of each component to the total erro:
+    err_p_ = (-Kp_ - Ap_ * alpha) * pv;
+    err_i_ = (-Ki_ - Ai_ * alpha) * pv_int_;
+    err_d_ = (-Kd_ - Ad_ * alpha) * pv_diff;
+
+    // Calculate the total error:
+    err_total_ = err_p_ + err_i_ + err_d_;
+    
+First, we can see how the integral term is not a sum, but a weighted sum: `pv_int_ = pv + Wi_ * pv_int_`. That means that this term would vanish over time before even the car crosses to the opposite side of the road, where it would have a CTE with opposite sign that will eventually bring the integral term back to 0.
+
+Then, each coefficient is increased/decreased by a variable `alpha` multiplied by a second coefficient set (Ap, Ai and Ad). This way, instead of having a fixed set of coefficients that are likely to work better at some specific speed, we can have a base weight that is increased or decreased as the vehicle’s speed changes, which is a more intuitive approach.
+
+For example, let's imagine a P-controller with a small Kp moving at a low speed. As the vehicle approaches a curve, it will start turning a bit, but as it's moving slowly, that small steering angle will be enough to make the car drive through the curve. However, if the car has the same Kp, but is traveling at a higher speed, chances are that small steering angle won't be enough to make the car turn enough to stay on the road and it will just go out straight or crash.
+
+Note that when Ap, Ai and Ad are set to 0, the controller will behave exactly like a normal PID controller, as explained above.
+
+Regarding he specific implementation used in the project, I have used one PID controller for the steering angle and an optional one can be used for the throttle. Alternatively, a fixed throttle can be used. The output of both controllers is constrained between a min and a max value, -1 and +1 in our case.
+
+Moreover, for the steering controller, the final steering value is a weighted sum between the value outputted by the controller and the previous angle, which helps reduce noise and oscillations:
+
+    double steer_value = 0.8 * pid_steer.update(CTE, 1.5 * speed, -1, 1) - 0.2 * angle/25;
+
+Regarding the throttle controller, both the process variable and the setpoint are adjusted before being feed to the controller:
+
+- The former (speed error) is constraint above 0, which allows the vehicle to accelerate sharply and reduce speed by only releasing the throttle. Alternatively, a small value > 0 could be set, which would allow the breaks to be actuated, but in a less intense way than the throttle.
+- The latter (target speed) is linearly decreased in relation to the CTE from a maximum value of 100 to a minimum value of 30. That is, the more offset the vehicle is, the slower it must go.
+
+    const double maxSpeed = 100;
+    const double minSpeed = 30;
+    const double targetSpeed = maxSpeed - min(abs(CTE), 2.0) * (maxSpeed - minSpeed) / 2;
+
+    // This min(0, diff) makes the throttle response asymmetric: accelerate hard but break soft.
+    // If the min is set to 0, the car will never break, it will just release the throttle.
+    // Otherwise, if set to anything > 0, the car will break softer that it would without this.
+    throttle = pid_throttle.update(min(0.0, speed - targetSpeed), CTE, -1, 1);
+
+
+### Hyperparameters Tunning
+
+Lastly, the tuning process was done manually by trial and error and by observing the effect of specific changes on the coefficients on the vehicle's behavior and on the contribution of each term to the total error (logged out to the terminal):
+
+First, with Ki and Kd set to 0 and a fixed throttle that would make the car go at around 50, Kp was adjusted so that the vehicle would oscillate around the center of the road without crashing. Next, Kd was increased incrementally until the oscillations were reduced and the trajectory of the car around the track was much smoother. Lastly, Ki was increased incrementally until the vehicle was able to make turns with an smaller overall CTE.
+
+Then, the second set of coefficients (Ap, Ai and Ad) was set to 1/100 of the value of the previous set of coefficients. That means that the sum of both coefficients at a speed of 100 would be twice the value of the K-coefficients alone. Next, the K-coefficients were reduced to compensate for the extra contribution of the A-coefficients and all of them were fine-tuned, observing how the vehicle was behaving on the track and what the contribution of each term was. For example:
+
+- If the vehicle is overshooting, Kp (and maybe Ki) could be reduced.
+- If the vehicle is overshooting while turning, Ki could be reduced.
+- If the vehicle is too offset while turning, Ki could be increased.
+- If the vehicle is undershooting or too unstable, Kd could be decreased.
+- If oscillations need to be reduced, Kd could be increased.
 
 
 Interesting Resources
