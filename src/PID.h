@@ -16,12 +16,18 @@ public:
   /*
   * Coefficients
   */ 
-  double kp_;
-  double ki_;
-  double kd_;
+  double Kp_;
+  double Ki_;
+  double Kd_;
 
-  double cte_prev_ = 0;
-  double cte_int_ = 0;
+  double Ap_;
+  double Ai_;
+  double Ad_;
+
+  double Wi_;
+
+  double pv_prev_ = 0;
+  double pv_int_ = 0;
 
   /*
   * Constructor
@@ -36,12 +42,12 @@ public:
   /*
   * Initialize PID.
   */
-  void init(const double Kp, const double Ki, const double Kd);
+  void init(const double Kp, const double Lp, const double Ki, const double Li, const double Kd, const double Ld, double const Wi);
 
   /*
   * Update the PID error variables given cross track error.
   */
-  double update(const double cte, const double min, const double max);
+  double update(const double cte, const double speed, const double min, const double max);
 
   /*
   * Calculate the total PID error.
