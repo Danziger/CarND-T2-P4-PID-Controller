@@ -120,14 +120,14 @@ Regarding the throttle controller, both the process variable and the setpoint ar
 - The former (speed error) is constraint above 0, which allows the vehicle to accelerate sharply and reduce speed by only releasing the throttle. Alternatively, a small value > 0 could be set, which would allow the breaks to be actuated, but in a less intense way than the throttle.
 - The latter (target speed) is linearly decreased in relation to the CTE from a maximum value of 100 to a minimum value of 30. That is, the more offset the vehicle is, the slower it must go.
 
-    const double maxSpeed = 100;
-    const double minSpeed = 30;
-    const double targetSpeed = maxSpeed - min(abs(CTE), 2.0) * (maxSpeed - minSpeed) / 2;
+      const double maxSpeed = 100;
+      const double minSpeed = 30;
+      const double targetSpeed = maxSpeed - min(abs(CTE), 2.0) * (maxSpeed - minSpeed) / 2;
 
-    // This min(0, diff) makes the throttle response asymmetric: accelerate hard but break soft.
-    // If the min is set to 0, the car will never break, it will just release the throttle.
-    // Otherwise, if set to anything > 0, the car will break softer that it would without this.
-    throttle = pid_throttle.update(min(0.0, speed - targetSpeed), CTE, -1, 1);
+      // This min(0, diff) makes the throttle response asymmetric: accelerate hard but break soft.
+      // If the min is set to 0, the car will never break, it will just release the throttle.
+      // Otherwise, if set to anything > 0, the car will break softer that it would without this.
+      throttle = pid_throttle.update(min(0.0, speed - targetSpeed), CTE, -1, 1);
 
 
 ### Hyperparameters Tunning
