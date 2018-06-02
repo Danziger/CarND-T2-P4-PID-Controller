@@ -137,16 +137,11 @@ int main(int argc, char **argv) {
         double throttle = THROTTLE;
 
         if (throttle == 0) {
-            // double throttle = pid_throttle.update(speed - 50 + 20 * cte/7, -1, 1);
-            // double throttle = pid_throttle.update((speed - 50) + 30 * cte/3, -1, 1);
-            // double throttle = pid_throttle.update(min(0.0, speed - 50) + 50 * cte / 3, -1, 1);
-
-            // throttle = pid_throttle.update(min(0.0, speed - 60) + (abs(CTE) < 1 ? 0 : CTE * 30), CTE, -1, 1);
             const double maxSpeed = 100;
             const double minSpeed = 30;
             const double targetSpeed = maxSpeed - min(abs(CTE), 2.0) * (maxSpeed - minSpeed) / 2;
 
-            // This min(0, diff) makes the throttle response asymetric: accelerate hard but break soft.
+            // This min(0, diff) makes the throttle response asymmetric: accelerate hard but break soft.
             // If the min is set to 0, the car will never break, it will just release the throttle.
             // Otherwise, if set to anything > 0, the car will break softer that it would without this.
             throttle = pid_throttle.update(min(0.0, speed - targetSpeed), CTE, -1, 1);
